@@ -40,6 +40,62 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
 
     SUGGESTION: use functions [typ_of_place], [fields_types_fresh] and [fn_prototype_fresh].
   *)
+  (*
+  Ensuite, nous ajoutons les relations de survies nécessaires pour que les instructions ne soient pas dangereuses
+  À FAIRE : Générer ces contraintes en :
+    - unifiant les types qui nécessitent d'être égaux (notez que MiniRust ne supporte pas le sous-typage, autrement dit,
+      si une variable x: &'a i32 est utilisée avec le type &'b i32, alors il est nécessaire que les durées de vie 'a et 'b
+      soient égales),
+    - ajoutant les contraintes requises par les appels de fonction,
+    - générant les contraintes correspondant aux réemprunts. Plus précisément, si nous créons un emprunt
+      sur une place qui déréférence des emprunts, alors la durée de vie de l'emprunt que l'on créé
+      doit être plus courte que les durées de vie des emprunts que la place déréférence.
+      Par exemple, si x: &'a &'b i32, et on créé un emprunt y = &**x de type &'c i32, alors c doit être
+      plus courte que 'a et 'b.
+  
+  SUGGESTION: utilisez les fonctions [typ_of_place], [fields_types_fresh] et [fn_prototype_fresh].
+  *)
+  Array.iteri
+    (fun _ (instr, loc) ->
+      match instr with
+      | Iassign (pl, rv, _) ->
+      (
+        let typPl = typ_of_place prog mir pl in
+        match typPl with
+        | Tstruct (_, l) -> () (*F dis shit am out*)
+        | Tborrow (lftPl, _, _) ->
+          (
+            match rv with
+            | RVconst _ -> () (*yes*)
+            | RVunit -> () (*yes*)
+            | RVplace p -> () (*unify ?*)
+            | RVborrow(Mut, p) -> () (*AAAAAAAAAAAAAAA*)
+            | RVborrow(_, p) -> () (*AAAAAAAAAAAA*)
+            | RVbinop(_, p1, p2) -> () (*unify ?*)
+            | RVunop(_, p) -> () (*unify ?*)
+            | RVmake(_, plist) -> () (*fields_types_fresh*)
+          )
+        | _ -> (); (*yes*)
+      )
+      | Ideinit _ -> () (*I believe : c juste un déréférencement*)
+      | Igoto _ -> () (*yes*)
+      | Iif _ -> () (*yes*)
+      | Ireturn -> () (*yes*)
+      | Icall (name, pList, pla, _) ->
+        let (tList, t, cstr) = fn_prototype_fresh prog name in
+        List.iter (fun lftPair -> add_outlives lftPair) cstr;
+        (*pour les param et le type : mess around avec unify et juste outlive*)
+        List.iter2 (
+          fun t' p ->
+            let t = typ_of_place prog mir p in
+            match t, t' with
+            | Tstruct (_, l), Tstruct (_, l') ->
+              List.iter2 (fun lft lft' -> add_outlives (lft, lft')) l l'
+            | Tborrow (lft, _, _), Tborrow (lft', _, _) -> add_outlives (lft, lft')
+            | _ -> ()
+          ) (t::tList) (pla::pList)
+    )
+    mir.minstrs;
 
   (* The [living] variable contains constraints of the form "lifetime 'a should be
     alive at program point p". *)
@@ -57,7 +113,7 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
   let live_locals = Live_locals.go mir in
 
   (* 3 TODO: generate living constraints:
-     - Add living constraints corresponding to the fact that liftimes appearing free
+     - Add living constraints corresponding to the fact that lifetimes appearing free
        in the type of live locals at some program point should be alive at that
        program point.
      - Add living constraints corresponding to the fact that generic lifetime variables
@@ -124,11 +180,11 @@ let borrowck prog mir =
         does not dereference a shared borrow. *)
       match instr with
       | Iassign (pl, rv, _) ->
-        if place_mut prog mir pl = Mut then
+        if place_mut prog mir pl = Mut then (*Incorrect maybe probably*)
           match rv with
                 | RVconst _ | RVunit -> ()
                 | RVplace p -> () (*sure enough*)
-                | RVborrow(Mut, p) ->
+                | RVborrow(Mut, p) -> (*Incorrect maybe probably*)
                   if not(contains_deref_borrow p) then
                     ()
                   else
