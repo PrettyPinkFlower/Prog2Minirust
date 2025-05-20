@@ -1,0 +1,22 @@
+opam-version: "2.0"
+lib: [
+  "_build/install/default/lib/crunch/META"
+  "_build/install/default/lib/crunch/crunch.a"
+  "_build/install/default/lib/crunch/crunch.cma"
+  "_build/install/default/lib/crunch/crunch.cmi"
+  "_build/install/default/lib/crunch/crunch.cmt"
+  "_build/install/default/lib/crunch/crunch.cmti"
+  "_build/install/default/lib/crunch/crunch.cmx"
+  "_build/install/default/lib/crunch/crunch.cmxa"
+  "_build/install/default/lib/crunch/crunch.ml"
+  "_build/install/default/lib/crunch/crunch.mli"
+  "_build/install/default/lib/crunch/dune-package"
+  "_build/install/default/lib/crunch/opam"
+]
+bin: "_build/install/default/bin/ocaml-crunch"
+doc: [
+  "_build/install/default/doc/crunch/CHANGES.md"
+  "_build/install/default/doc/crunch/LICENSE.md"
+  "_build/install/default/doc/crunch/README.md"
+]
+libexec: "_build/install/default/lib/crunch/crunch.cmxs"

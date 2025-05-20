@@ -1,0 +1,204 @@
+.TH "Linkdeps" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Linkdeps \- no description
+.SH Module
+Module   Linkdeps
+.SH Documentation
+.sp
+Module
+.BI "Linkdeps"
+ : 
+.B sig end
+
+.sp
+
+.sp
+
+.sp
+.sp
+.I type t 
+
+.sp
+The state of the linking check\&.
+It keeps track of compilation units provided and required so far\&.
+
+.sp
+.I type compunit 
+= 
+.B string
+
+.sp
+
+.sp
+.I type filename 
+= 
+.B string
+
+.sp
+
+.sp
+
+.I val create 
+: 
+.B complete:bool -> t
+.sp
+
+.ft B
+create ~complete
+.ft R
+returns an empty state\&. If 
+.ft B
+complete
+.ft R
+is
+.ft B
+true
+.ft R
+, missing compilation units will be treated as errors\&.
+
+.sp
+
+.I val add 
+: 
+.B t ->
+.B   filename:filename ->
+.B   compunit:compunit ->
+.B   provides:compunit list -> requires:compunit list -> unit
+.sp
+
+.ft B
+add t ~filename ~compunit ~provides ~requires
+.ft R
+registers the
+compilation unit 
+.ft B
+compunit
+.ft R
+found in 
+.ft B
+filename
+.ft R
+to 
+.ft B
+t
+.ft R
+\&.
+.sp
+\-
+.ft B
+provides
+.ft R
+are units and sub\-units provided by 
+.ft B
+compunit
+.ft R
+
+.sp
+\-
+.ft B
+requires
+.ft R
+are units required by 
+.ft B
+compunit
+.ft R
+
+
+.ft B
+add
+.ft R
+should be called in reverse topological order\&.
+
+.sp
+
+.I val required 
+: 
+.B t -> compunit -> bool
+.sp
+
+.ft B
+required t compunit
+.ft R
+returns 
+.ft B
+true
+.ft R
+if 
+.ft B
+compunit
+.ft R
+is a dependency of
+previously added compilation units\&.
+
+.sp
+.I type compunit_and_source 
+= {
+ compunit : 
+.B compunit
+;
+ filename : 
+.B filename
+;
+ }
+
+.sp
+
+.sp
+.I type error 
+=
+ | Missing_implementations
+.B of 
+.B (compunit * compunit_and_source list) list
+ | Wrong_link_order
+.B of 
+.B (compunit_and_source * compunit_and_source list) list
+ | Multiple_definitions
+.B of 
+.B (compunit * filename list) list
+ 
+.sp
+
+.sp
+
+.I val check 
+: 
+.B t -> error option
+.sp
+
+.ft B
+check t
+.ft R
+should be called once all the compilation units to be linked
+have been added\&.  It returns some error if:
+.sp
+\-There are some missing implementations
+and 
+.ft B
+complete
+.ft R
+is 
+.ft B
+true
+.ft R
+
+.sp
+\-Some implementation appear
+before their dependencies
+
+
+.sp
+
+.I val report_error 
+: 
+.B print_filename:string Format_doc.printer ->
+.B   error Format_doc.format_printer
+.sp
+
+.sp
+
+.I val report_error_doc 
+: 
+.B print_filename:string Format_doc.printer -> error Format_doc.printer
+.sp
+
+.sp

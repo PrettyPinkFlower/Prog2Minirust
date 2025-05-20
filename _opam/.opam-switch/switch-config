@@ -1,0 +1,13 @@
+opam-version: "2.0"
+synopsis: "ocaml >= 4.05.0"
+opam-root: "/home/airis/.opam"
+invariant: [
+  "ocaml" {>= "4.05.0"}
+]
+paths {
+  
+}
+variables {
+  user: "airis"
+  group: "airis"
+}

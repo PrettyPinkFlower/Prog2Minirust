@@ -1,0 +1,489 @@
+.TH "Format_doc.Doc" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Format_doc.Doc \- Definitions and immutable API for composing documents
+.SH Module
+Module   Format_doc.Doc
+.SH Documentation
+.sp
+Module
+.BI "Doc"
+ : 
+.B sig end
+
+.sp
+Definitions and immutable API for composing documents
+
+.sp
+
+.sp
+.sp
+
+.PP
+.SS Type definitions and core functions 
+
+.PP
+.I type box_type 
+=
+ | H
+ | V
+ | HV
+ | HoV
+ | B
+ 
+.sp
+Format box types
+
+.sp
+.I type stag 
+= 
+.B Format.stag
+
+.sp
+
+.sp
+.I type element 
+=
+ | Text
+.B of 
+.B string
+ | With_size
+.B of 
+.B int
+ | Open_box
+.B of {
+ kind : 
+.B box_type
+;
+ indent : 
+.B int
+;
+ }
+ | Close_box
+ | Open_tag
+.B of 
+.B Format.stag
+ | Close_tag
+ | Open_tbox
+ | Tab_break
+.B of {
+ width : 
+.B int
+;
+ offset : 
+.B int
+;
+ }
+ | Set_tab
+ | Close_tbox
+ | Simple_break
+.B of {
+ spaces : 
+.B int
+;
+ indent : 
+.B int
+;
+ }
+ | Break
+.B of {
+ fits : 
+.B string * int * string
+;
+ breaks : 
+.B string * int * string
+;
+ }
+ | Flush
+.B of {
+ newline : 
+.B bool
+;
+ }
+ | Newline
+ | If_newline
+ | Deprecated
+.B of 
+.B (Format.formatter -> unit)
+.I "  "
+  (* Escape hatch: a 
+.ft B
+Format
+.ft R
+printer used to provide backward\-compatibility
+for user\-defined printer (from the 
+.ft B
+#install_printer
+.ft R
+toplevel directive
+for instance)\&.
+ *)
+ 
+.sp
+Base formatting instruction recognized by 
+.ft B
+Format
+.ft R
+
+
+.sp
+.I type t 
+
+.sp
+Immutable document type
+
+.sp
+.I type 
+.B ('a, 'b)
+.I fmt 
+= 
+.B ('a, t, t, 'b) format4
+
+.sp
+
+.sp
+.I type printer0 
+= 
+.B t -> t
+
+.sp
+
+.sp
+.I type 
+.B 'a
+.I printer 
+= 
+.B 'a -> printer0
+
+.sp
+
+.sp
+
+.I val empty 
+: 
+.B t
+.sp
+Empty document
+
+.sp
+
+.I val format 
+: 
+.B Format.formatter -> t -> unit
+.sp
+
+.ft B
+format ppf doc
+.ft R
+sends the format instruction of 
+.ft B
+doc
+.ft R
+to the Format\&'s
+formatter 
+.ft B
+doc
+.ft R
+\&.
+
+.sp
+
+.I val fold 
+: 
+.B ('acc -> element -> 'acc) -> 'acc -> t -> 'acc
+.sp
+Fold over a document as a sequence of instructions
+
+.sp
+
+.I val msg 
+: 
+.B ('a, t) fmt -> 'a
+.sp
+
+.ft B
+Format_doc\&.Doc\&.msg
+.ft R
+and 
+.ft B
+Format_doc\&.Doc\&.kmsg
+.ft R
+produce a document from a format string and its
+argument
+
+.sp
+
+.I val kmsg 
+: 
+.B (t -> 'b) -> ('a, 'b) fmt -> 'a
+.sp
+
+.sp
+
+.I val printf 
+: 
+.B ('a, printer0) fmt -> 'a
+.sp
+
+.ft B
+Format_doc\&.Doc\&.printf
+.ft R
+and 
+.ft B
+Format_doc\&.Doc\&.kprintf
+.ft R
+produce a printer from a format string and its
+argument
+
+.sp
+
+.I val kprintf 
+: 
+.B (t -> 'b) ->
+.B   ('a, t -> 'b) fmt -> 'a
+.sp
+
+.sp
+
+.I val open_box 
+: 
+.B box_type -> int -> printer0
+.sp
+The functions below mirror 
+.ft B
+Format
+.ft R
+printers, without the 
+.ft B
+pp_print_
+.ft R
+prefix naming convention
+
+.sp
+
+.I val close_box 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val text 
+: 
+.B string printer
+.sp
+
+.sp
+
+.I val string 
+: 
+.B string printer
+.sp
+
+.sp
+
+.I val bytes 
+: 
+.B bytes printer
+.sp
+
+.sp
+
+.I val with_size 
+: 
+.B int printer
+.sp
+
+.sp
+
+.I val int 
+: 
+.B int printer
+.sp
+
+.sp
+
+.I val float 
+: 
+.B float printer
+.sp
+
+.sp
+
+.I val char 
+: 
+.B char printer
+.sp
+
+.sp
+
+.I val bool 
+: 
+.B bool printer
+.sp
+
+.sp
+
+.I val space 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val cut 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val break 
+: 
+.B spaces:int -> indent:int -> printer0
+.sp
+
+.sp
+
+.I val custom_break 
+: 
+.B fits:string * int * string ->
+.B   breaks:string * int * string -> printer0
+.sp
+
+.sp
+
+.I val force_newline 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val if_newline 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val flush 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val force_stop 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val open_tbox 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val set_tab 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val tab 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val tab_break 
+: 
+.B width:int -> offset:int -> printer0
+.sp
+
+.sp
+
+.I val close_tbox 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val open_tag 
+: 
+.B stag printer
+.sp
+
+.sp
+
+.I val close_tag 
+: 
+.B printer0
+.sp
+
+.sp
+
+.I val list 
+: 
+.B ?sep:printer0 ->
+.B   'a printer -> 'a list printer
+.sp
+
+.sp
+
+.I val iter 
+: 
+.B ?sep:printer0 ->
+.B   iter:(('a -> unit) -> 'b -> unit) ->
+.B   'a printer -> 'b printer
+.sp
+
+.sp
+
+.I val array 
+: 
+.B ?sep:printer0 ->
+.B   'a printer -> 'a array printer
+.sp
+
+.sp
+
+.I val seq 
+: 
+.B ?sep:printer0 ->
+.B   'a printer -> 'a Seq.t printer
+.sp
+
+.sp
+
+.I val option 
+: 
+.B ?none:printer0 ->
+.B   'a printer -> 'a option printer
+.sp
+
+.sp
+
+.I val result 
+: 
+.B ok:'a printer ->
+.B   error:'e printer ->
+.B   ('a, 'e) result printer
+.sp
+
+.sp
+
+.I val either 
+: 
+.B left:'a printer ->
+.B   right:'b printer ->
+.B   ('a, 'b) Either.t printer
+.sp
+
+.sp

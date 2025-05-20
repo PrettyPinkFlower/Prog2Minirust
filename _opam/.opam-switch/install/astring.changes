@@ -1,0 +1,31 @@
+opam-version: "2.0"
+added: [
+  "doc/astring" {"D"}
+  "doc/astring/CHANGES.md" {"F:S934T1747309711.18"}
+  "doc/astring/LICENSE.md" {"F:S741T1747309711.18"}
+  "doc/astring/README.md" {"F:S1345T1747309711.18"}
+  "doc/astring/examples.ml" {"F:S2980T1747309711.18"}
+  "lib/astring" {"D"}
+  "lib/astring/META" {"F:S461T1747309711.18"}
+  "lib/astring/astring.a" {"F:S314896T1747309711.18"}
+  "lib/astring/astring.cma" {"F:S411719T1747309711.18"}
+  "lib/astring/astring.cmi" {"F:S41613T1747309711.18"}
+  "lib/astring/astring.cmti" {"F:S270567T1747309711.18"}
+  "lib/astring/astring.cmx" {"F:S28279T1747309711.18"}
+  "lib/astring/astring.cmxa" {"F:S6065T1747309711.18"}
+  "lib/astring/astring.cmxs" {"F:S283264T1747309711.18"}
+  "lib/astring/astring.mli" {"F:S52930T1747309711.18"}
+  "lib/astring/astring_base.cmx" {"F:S2112T1747309711.18"}
+  "lib/astring/astring_char.cmx" {"F:S3192T1747309711.18"}
+  "lib/astring/astring_escape.cmx" {"F:S1608T1747309711.18"}
+  "lib/astring/astring_string.cmx" {"F:S19035T1747309711.18"}
+  "lib/astring/astring_sub.cmx" {"F:S12837T1747309711.18"}
+  "lib/astring/astring_top.a" {"F:S4070T1747309711.18"}
+  "lib/astring/astring_top.cma" {"F:S3708T1747309711.18"}
+  "lib/astring/astring_top.cmx" {"F:S1526T1747309711.18"}
+  "lib/astring/astring_top.cmxa" {"F:S1532T1747309711.18"}
+  "lib/astring/astring_top.cmxs" {"F:S18912T1747309711.18"}
+  "lib/astring/astring_top_init.ml" {"F:S1424T1747309711.18"}
+  "lib/astring/astring_unsafe.cmx" {"F:S1170T1747309711.18"}
+  "lib/astring/opam" {"F:S1269T1747309711.18"}
+]

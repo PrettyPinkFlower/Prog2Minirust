@@ -1,0 +1,635 @@
+.TH "Format_doc" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Format_doc \- Composable document for the Format formatting engine.
+.SH Module
+Module   Format_doc
+.SH Documentation
+.sp
+Module
+.BI "Format_doc"
+ : 
+.B sig end
+
+.sp
+Composable document for the 
+.ft B
+Format
+.ft R
+formatting engine\&.
+
+.sp
+
+.sp
+.sp
+
+.PP
+This module introduces a pure and immutable document type which represents a
+sequence of formatting instructions to be printed by a formatting engine at
+later point\&. At the same time, it also provides format string interpreter
+which produces this document type from format string and their associated
+printers\&.
+.sp
+The module is designed to be source compatible with code defining format
+printers: replacing `Format` by `Format_doc` in your code will convert
+`Format` printers to `Format_doc` printers\&.
+.PP
+.I module Doc : 
+.B sig end
+
+.sp
+Definitions and immutable API for composing documents
+
+.sp
+
+.PP
+.SS Compatibility API
+
+.PP
+
+.PP
+The functions and types below provides source compatibility with format
+printers and conversion function from 
+.ft B
+Format_doc
+.ft R
+printers to 
+.ft B
+Format
+.ft R
+printers\&. The reverse direction is implemented using an escape hatch in the
+formatting instruction and should only be used to preserve backward
+compatibility\&.
+.PP
+.I type doc 
+= 
+.B Doc.t
+
+.sp
+
+.sp
+.I type t 
+= 
+.B doc
+
+.sp
+
+.sp
+.I type formatter 
+
+.sp
+
+.sp
+.I type 
+.B 'a
+.I printer 
+= 
+.B formatter -> 'a -> unit
+
+.sp
+
+.sp
+
+.I val formatter 
+: 
+.B doc ref -> formatter
+.sp
+
+.ft B
+formatter rdoc
+.ft R
+creates a 
+.ft B
+Format_doc\&.formatter
+.ft R
+that updates the 
+.ft B
+rdoc
+.ft R
+reference
+
+.sp
+.I type 
+.B 'a
+.I format_printer 
+= 
+.B Format.formatter -> 'a -> unit
+
+.sp
+Translate a 
+.ft B
+Format_doc
+.ft R
+printer to a 
+.ft B
+Format
+.ft R
+one\&.
+
+.sp
+
+.I val compat 
+: 
+.B 'a printer -> 'a format_printer
+.sp
+
+.sp
+
+.I val compat1 
+: 
+.B ('p1 -> 'a printer) -> 'p1 -> 'a format_printer
+.sp
+
+.sp
+
+.I val compat2 
+: 
+.B ('p1 -> 'p2 -> 'a printer) ->
+.B   'p1 -> 'p2 -> 'a format_printer
+.sp
+
+.sp
+
+.I val deprecated_printer 
+: 
+.B (Format.formatter -> unit) -> formatter -> unit
+.sp
+If necessary, embbed a 
+.ft B
+Format
+.ft R
+printer inside a formatting instruction
+stream\&. This breaks every guarantees provided by 
+.ft B
+Format_doc
+.ft R
+\&.
+
+.sp
+
+.I val deprecated 
+: 
+.B 'a format_printer -> 'a printer
+.sp
+
+.sp
+
+.I val deprecated1 
+: 
+.B ('p1 -> 'a format_printer) -> 'p1 -> 'a printer
+.sp
+
+.sp
+
+.PP
+.SS Format string interpreters 
+
+.PP
+
+.I val fprintf 
+: 
+.B formatter -> ('a, formatter, unit) format -> 'a
+.sp
+
+.sp
+
+.I val kfprintf 
+: 
+.B (formatter -> 'a) ->
+.B   formatter ->
+.B   ('b, formatter, unit, 'a) format4 -> 'b
+.sp
+
+.sp
+
+.I val asprintf 
+: 
+.B ('a, formatter, unit, string) format4 -> 'a
+.sp
+
+.sp
+
+.I val kasprintf 
+: 
+.B (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+.sp
+
+.sp
+
+.I val dprintf 
+: 
+.B ('a, formatter, unit, formatter -> unit) format4 ->
+.B   'a
+.sp
+
+.sp
+
+.I val kdprintf 
+: 
+.B ((formatter -> unit) -> 'a) ->
+.B   ('b, formatter, unit, 'a) format4 -> 'b
+.sp
+
+.sp
+
+.I val doc_printf 
+: 
+.B ('a, formatter, unit, doc) format4 -> 'a
+.sp
+
+.ft B
+Format_doc\&.doc_printf
+.ft R
+and 
+.ft B
+Format_doc\&.kdoc_printf
+.ft R
+creates a document directly
+
+.sp
+
+.I val kdoc_printf 
+: 
+.B (doc -> 'r) ->
+.B   ('a, formatter, unit, 'r) format4 -> 'a
+.sp
+
+.sp
+
+.PP
+.SS Compatibility with Format_doc.Doc 
+
+.PP
+
+.I val doc_printer 
+: 
+.B 'a printer -> 'a Doc.printer
+.sp
+
+.sp
+
+.I val pp_doc 
+: 
+.B doc printer
+.sp
+
+.sp
+
+.PP
+.SS Source compatibility with Format
+
+.PP
+
+.PP
+.SS String printers 
+
+.PP
+
+.I val pp_print_string 
+: 
+.B string printer
+.sp
+
+.sp
+
+.I val pp_print_substring 
+: 
+.B pos:int -> len:int -> string printer
+.sp
+
+.sp
+
+.I val pp_print_text 
+: 
+.B string printer
+.sp
+
+.sp
+
+.I val pp_print_bytes 
+: 
+.B bytes printer
+.sp
+
+.sp
+
+.I val pp_print_as 
+: 
+.B formatter -> int -> string -> unit
+.sp
+
+.sp
+
+.I val pp_print_substring_as 
+: 
+.B pos:int -> len:int -> formatter -> int -> string -> unit
+.sp
+
+.sp
+
+.PP
+.SS Primitive type printers 
+
+.PP
+
+.I val pp_print_char 
+: 
+.B char printer
+.sp
+
+.sp
+
+.I val pp_print_int 
+: 
+.B int printer
+.sp
+
+.sp
+
+.I val pp_print_float 
+: 
+.B float printer
+.sp
+
+.sp
+
+.I val pp_print_bool 
+: 
+.B bool printer
+.sp
+
+.sp
+
+.I val pp_print_nothing 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.PP
+.SS Printer combinators 
+
+.PP
+
+.I val pp_print_iter 
+: 
+.B ?pp_sep:unit printer ->
+.B   (('a -> unit) -> 'b -> unit) ->
+.B   'a printer -> 'b printer
+.sp
+
+.sp
+
+.I val pp_print_list 
+: 
+.B ?pp_sep:unit printer ->
+.B   'a printer -> 'a list printer
+.sp
+
+.sp
+
+.I val pp_print_array 
+: 
+.B ?pp_sep:unit printer ->
+.B   'a printer -> 'a array printer
+.sp
+
+.sp
+
+.I val pp_print_seq 
+: 
+.B ?pp_sep:unit printer ->
+.B   'a printer -> 'a Seq.t printer
+.sp
+
+.sp
+
+.I val pp_print_option 
+: 
+.B ?none:unit printer ->
+.B   'a printer -> 'a option printer
+.sp
+
+.sp
+
+.I val pp_print_result 
+: 
+.B ok:'a printer ->
+.B   error:'e printer -> ('a, 'e) result printer
+.sp
+
+.sp
+
+.I val pp_print_either 
+: 
+.B left:'a printer ->
+.B   right:'b printer -> ('a, 'b) Either.t printer
+.sp
+
+.sp
+
+.PP
+.SS Boxes and tags 
+
+.PP
+
+.I val pp_open_stag 
+: 
+.B Format.stag printer
+.sp
+
+.sp
+
+.I val pp_close_stag 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_open_box 
+: 
+.B int printer
+.sp
+
+.sp
+
+.I val pp_close_box 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.PP
+.SS Break hints
+
+.PP
+
+.I val pp_print_space 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_cut 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_break 
+: 
+.B formatter -> int -> int -> unit
+.sp
+
+.sp
+
+.I val pp_print_custom_break 
+: 
+.B formatter ->
+.B   fits:string * int * string -> breaks:string * int * string -> unit
+.sp
+
+.sp
+
+.PP
+.SS Tabulations 
+
+.PP
+
+.I val pp_open_tbox 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_close_tbox 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_set_tab 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_tab 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_tbreak 
+: 
+.B formatter -> int -> int -> unit
+.sp
+
+.sp
+
+.PP
+.SS Newlines and flushing 
+
+.PP
+
+.I val pp_print_if_newline 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_force_newline 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_flush 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.I val pp_print_newline 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.PP
+.SS Compiler specific functions 
+
+.PP
+
+.PP
+.SS Separators 
+
+.PP
+
+.I val comma 
+: 
+.B unit printer
+.sp
+
+.sp
+
+.PP
+.SS Compiler output
+
+.PP
+
+.I val pp_two_columns 
+: 
+.B ?sep:string ->
+.B   ?max_lines:int -> formatter -> (string * string) list -> unit
+.sp
+
+.ft B
+pp_two_columns ?sep ?max_lines ppf l
+.ft R
+prints the lines in 
+.ft B
+l
+.ft R
+as two
+columns separated by 
+.ft B
+sep
+.ft R
+("|" by default)\&. 
+.ft B
+max_lines
+.ft R
+can be used to
+indicate a maximum number of lines to print \-\- an ellipsis gets inserted at
+the middle if the input has too many lines\&.
+.sp
+Example:
+.sp
+pp_two_columns ~max_lines:3 Format\&.std_formatter [
+"abc", "hello";
+"def", "zzz";
+"a"  , "bllbl";
+"bb" , "dddddd";
+]
+.sp
+prints
+.sp
+abc | hello
+\&.\&.\&.
+bb  | dddddd
+
+
+.sp

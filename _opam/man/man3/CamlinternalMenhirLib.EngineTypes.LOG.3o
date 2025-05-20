@@ -1,0 +1,84 @@
+.TH "CamlinternalMenhirLib.EngineTypes.LOG" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+CamlinternalMenhirLib.EngineTypes.LOG \- no description
+.SH Module type
+Module type   CamlinternalMenhirLib.EngineTypes.LOG
+.SH Documentation
+.sp
+Module type
+.BI "LOG"
+ = 
+.B sig end
+
+.sp
+
+.sp
+
+.sp
+.sp
+.I type state 
+
+.sp
+
+.sp
+.I type terminal 
+
+.sp
+
+.sp
+.I type production 
+
+.sp
+
+.sp
+
+.I val state 
+: 
+.B state -> unit
+.sp
+
+.sp
+
+.I val shift 
+: 
+.B terminal ->
+.B   state -> unit
+.sp
+
+.sp
+
+.I val reduce_or_accept 
+: 
+.B production -> unit
+.sp
+
+.sp
+
+.I val lookahead_token 
+: 
+.B terminal ->
+.B   Lexing.position -> Lexing.position -> unit
+.sp
+
+.sp
+
+.I val initiating_error_handling 
+: 
+.B unit -> unit
+.sp
+
+.sp
+
+.I val resuming_error_handling 
+: 
+.B unit -> unit
+.sp
+
+.sp
+
+.I val handling_error 
+: 
+.B state -> unit
+.sp
+
+.sp

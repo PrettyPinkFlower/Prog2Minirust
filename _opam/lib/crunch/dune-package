@@ -1,0 +1,35 @@
+(lang dune 3.18)
+(name crunch)
+(version 4.0.0)
+(sections (lib .) (libexec .) (bin ../../bin) (doc ../../doc/crunch))
+(files
+ (lib
+  (META
+   crunch.a
+   crunch.cma
+   crunch.cmi
+   crunch.cmt
+   crunch.cmti
+   crunch.cmx
+   crunch.cmxa
+   crunch.ml
+   crunch.mli
+   dune-package
+   opam))
+ (libexec (crunch.cmxs))
+ (bin (ocaml-crunch))
+ (doc (CHANGES.md LICENSE.md README.md)))
+(library
+ (name crunch)
+ (kind normal)
+ (synopsis "Compile static files into a static filesystem")
+ (archives (byte crunch.cma) (native crunch.cmxa))
+ (plugins (byte crunch.cma) (native crunch.cmxs))
+ (native_archives crunch.a)
+ (requires unix ptime)
+ (modes byte native)
+ (modules
+  (singleton
+   (obj_name crunch)
+   (visibility public)
+   (source (path Crunch) (intf (path crunch.mli)) (impl (path crunch.ml))))))

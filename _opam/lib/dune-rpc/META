@@ -1,0 +1,18 @@
+version = "3.18.2"
+description = "dune rpc client and protocol"
+requires =
+"csexp dune-rpc.private dyn ordering pp stdune stdune.filesystem_stubs xdg"
+archive(byte) = "dune_rpc.cma"
+archive(native) = "dune_rpc.cmxa"
+plugin(byte) = "dune_rpc.cma"
+plugin(native) = "dune_rpc.cmxs"
+package "private" (
+  directory = "private"
+  version = "3.18.2"
+  description = "for internal use only"
+  requires = "csexp dyn ordering pp stdune stdune.filesystem_stubs unix xdg"
+  archive(byte) = "dune_rpc_private.cma"
+  archive(native) = "dune_rpc_private.cmxa"
+  plugin(byte) = "dune_rpc_private.cma"
+  plugin(native) = "dune_rpc_private.cmxs"
+)

@@ -1,0 +1,53 @@
+.TH "Location.Doc" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Location.Doc \- no description
+.SH Module
+Module   Location.Doc
+.SH Documentation
+.sp
+Module
+.BI "Doc"
+ : 
+.B sig end
+
+.sp
+
+.sp
+
+.sp
+.sp
+
+.I val separate_new_message 
+: 
+.B unit Format_doc.printer
+.sp
+
+.sp
+
+.I val filename 
+: 
+.B string Format_doc.printer
+.sp
+
+.sp
+
+.I val quoted_filename 
+: 
+.B string Format_doc.printer
+.sp
+
+.sp
+
+.I val loc 
+: 
+.B Location.t Format_doc.printer
+.sp
+
+.sp
+
+.I val locs 
+: 
+.B Location.t list Format_doc.printer
+.sp
+
+.sp

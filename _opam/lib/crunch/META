@@ -1,0 +1,7 @@
+version = "4.0.0"
+description = "Compile static files into a static filesystem"
+requires = "ptime unix"
+archive(byte) = "crunch.cma"
+archive(native) = "crunch.cmxa"
+plugin(byte) = "crunch.cma"
+plugin(native) = "crunch.cmxs"

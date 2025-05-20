@@ -1,0 +1,156 @@
+.TH "Misc.Utf8_lexeme" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Misc.Utf8_lexeme \- no description
+.SH Module
+Module   Misc.Utf8_lexeme
+.SH Documentation
+.sp
+Module
+.BI "Utf8_lexeme"
+ : 
+.B sig end
+
+.sp
+
+.sp
+
+.sp
+.sp
+.I type t 
+= 
+.B string
+
+.sp
+
+.sp
+
+.I val normalize 
+: 
+.B string -> (t, t) Result.t
+.sp
+Normalize the given UTF\-8 encoded string\&.
+Invalid UTF\-8 sequences results in a error and are replaced
+by U+FFFD\&.
+Identifier characters are put in NFC normalized form\&.
+Other Unicode characters are left unchanged\&.
+
+.sp
+
+.I val capitalize 
+: 
+.B string -> (t, t) Result.t
+.sp
+Like 
+.ft B
+normalize
+.ft R
+, but if the string starts with a lowercase identifier
+character, it is replaced by the corresponding uppercase character\&.
+Subsequent characters are not changed\&.
+
+.sp
+
+.I val uncapitalize 
+: 
+.B string -> (t, t) Result.t
+.sp
+Like 
+.ft B
+normalize
+.ft R
+, but if the string starts with an uppercase identifier
+character, it is replaced by the corresponding lowercase character\&.
+Subsequent characters are not changed\&.
+
+.sp
+
+.I val is_capitalized 
+: 
+.B t -> bool
+.sp
+Returns 
+.ft B
+true
+.ft R
+if the given normalized string starts with an
+uppercase identifier character, 
+.ft B
+false
+.ft R
+otherwise\&.  May return
+wrong results if the string is not normalized\&.
+
+.sp
+
+.I val is_valid_identifier 
+: 
+.B t -> bool
+.sp
+Check whether the given normalized string is a valid OCaml identifier:
+.sp
+\-all characters are identifier characters
+.sp
+\-it does not start with a digit or a single quote
+
+
+.sp
+
+.I val is_lowercase 
+: 
+.B t -> bool
+.sp
+Returns 
+.ft B
+true
+.ft R
+if the given normalized string only contains lowercase
+identifier character, 
+.ft B
+false
+.ft R
+otherwise\&. May return wrong results if the
+string is not normalized\&.
+
+.sp
+.I type validation_result 
+=
+ | Valid
+ | Invalid_character
+.B of 
+.B Uchar.t
+.I "  "
+  (* Character not allowed
+ *)
+ | Invalid_beginning
+.B of 
+.B Uchar.t
+.I "  "
+  (* Character not allowed as first char
+ *)
+ 
+.sp
+
+.sp
+
+.I val validate_identifier 
+: 
+.B ?with_dot:bool -> t -> validation_result
+.sp
+Like 
+.ft B
+is_valid_identifier
+.ft R
+, but returns a more detailed error code\&. Dots
+can be allowed to extend support to path\-like identifiers\&.
+
+.sp
+
+.I val starts_like_a_valid_identifier 
+: 
+.B t -> bool
+.sp
+Checks whether the given normalized string starts with an identifier
+character other than a digit or a single quote\&.  Subsequent characters
+are not checked\&.
+
+.sp

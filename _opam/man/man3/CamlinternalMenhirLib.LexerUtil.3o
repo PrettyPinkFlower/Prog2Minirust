@@ -1,0 +1,168 @@
+.TH "CamlinternalMenhirLib.LexerUtil" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+CamlinternalMenhirLib.LexerUtil \- no description
+.SH Module
+Module   CamlinternalMenhirLib.LexerUtil
+.SH Documentation
+.sp
+Module
+.BI "LexerUtil"
+ : 
+.B sig end
+
+.sp
+
+.sp
+
+.sp
+.sp
+
+.I val init 
+: 
+.B string -> Lexing.lexbuf -> Lexing.lexbuf
+.sp
+
+.ft B
+init filename lexbuf
+.ft R
+initializes the lexing buffer 
+.ft B
+lexbuf
+.ft R
+so
+that the positions that are subsequently read from it refer to the
+file 
+.ft B
+filename
+.ft R
+\&. It returns 
+.ft B
+lexbuf
+.ft R
+\&.
+
+.sp
+
+.I val read 
+: 
+.B string -> string * Lexing.lexbuf
+.sp
+
+.ft B
+read filename
+.ft R
+reads the entire contents of the file 
+.ft B
+filename
+.ft R
+and
+returns a pair of this content (a string) and a lexing buffer that
+has been initialized, based on this string\&.
+
+.sp
+
+.I val newline 
+: 
+.B Lexing.lexbuf -> unit
+.sp
+
+.ft B
+newline lexbuf
+.ft R
+increments the line counter stored within 
+.ft B
+lexbuf
+.ft R
+\&. It
+should be invoked by the lexer itself every time a newline character is
+consumed\&. This allows maintaining a current the line number in 
+.ft B
+lexbuf
+.ft R
+\&.
+
+.sp
+
+.I val range 
+: 
+.B Lexing.position * Lexing.position -> string
+.sp
+
+.ft B
+range (startpos, endpos)
+.ft R
+prints a textual description of the range
+delimited by the start and end positions 
+.ft B
+startpos
+.ft R
+and 
+.ft B
+endpos
+.ft R
+\&.
+This description is one line long and ends in a newline character\&.
+This description mentions the file name, the line number, and a range
+of characters on this line\&. The line number is correct only if 
+.ft B
+newline
+.ft R
+has been correctly used, as described dabove\&.
+
+.sp
+
+.I val tabulate 
+: 
+.B ('a -> bool) -> (unit -> 'a) -> unit -> 'a
+.sp
+
+.ft B
+tabulate is_eof lexer
+.ft R
+tabulates the lexer 
+.ft B
+lexer
+.ft R
+: that is, it
+immediately runs this lexer all the way until an EOF token is found, stores
+the tokens in an array in memory, and returns a new lexer which (when
+invoked) reads tokens from this array\&. The function 
+.ft B
+lexer
+.ft R
+is not allowed
+to raise an exception, and must produce a finite stream of tokens: that is,
+after a finite number of invocations, it must return a token that is
+identified by the function 
+.ft B
+is_eof
+.ft R
+as an EOF token\&.
+.sp
+Both the existing lexer 
+.ft B
+lexer
+.ft R
+and the new lexer returned by 
+.ft B
+tabulate
+.br
+\&   is_eof lexer
+.ft R
+are functions of type 
+.ft B
+unit \-> \&'a
+.ft R
+, where the type 
+.ft B
+\&'a
+.ft R
+is
+likely to be instantiated with a triple of a token and two positions, as
+per the revised lexer API described in the module 
+.ft B
+CamlinternalMenhirLib\&.Convert
+.ft R
+\&.
+
+.sp

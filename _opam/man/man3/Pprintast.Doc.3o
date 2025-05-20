@@ -1,0 +1,53 @@
+.TH "Pprintast.Doc" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Pprintast.Doc \- Format_doc functions for error messages
+.SH Module
+Module   Pprintast.Doc
+.SH Documentation
+.sp
+Module
+.BI "Doc"
+ : 
+.B sig end
+
+.sp
+
+.ft B
+Format_doc
+.ft R
+functions for error messages
+
+.sp
+
+.sp
+.sp
+
+.I val longident 
+: 
+.B Longident.t Format_doc.printer
+.sp
+
+.sp
+
+.I val constr 
+: 
+.B Longident.t Format_doc.printer
+.sp
+
+.sp
+
+.I val tyvar 
+: 
+.B string Format_doc.printer
+.sp
+
+.sp
+
+.I val nominal_exp 
+: 
+.B Parsetree.expression -> Format_doc.t option
+.sp
+Returns a format document if the expression reads nicely as the subject
+of a sentence in a error message\&.
+
+.sp

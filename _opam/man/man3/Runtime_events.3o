@@ -1,0 +1,810 @@
+.TH "Runtime_events" 3 2025-05-15 OCamldoc "OCaml library"
+.SH NAME
+Runtime_events \- Runtime events - ring buffer-based runtime tracing
+.SH Module
+Module   Runtime_events
+.SH Documentation
+.sp
+Module
+.BI "Runtime_events"
+ : 
+.B sig end
+
+.sp
+Runtime events \- ring buffer\-based runtime tracing
+.sp
+This module enables users to enable and subscribe to tracing events
+from the Garbage Collector and other parts of the OCaml runtime\&. This can
+be useful for diagnostic or performance monitoring purposes\&. This module
+can be used to subscribe to events for the current process or external
+processes asynchronously\&.
+.sp
+When enabled (either via setting the OCAML_RUNTIME_EVENTS_START environment
+variable or calling Runtime_events\&.start) a file with the pid of the process
+and extension \&.events will be created\&. By default this is in the
+current directory but can be over\-ridden by the OCAML_RUNTIME_EVENTS_DIR
+environment variable\&. Each domain maintains its own ring buffer in a section
+of the larger file into which it emits events\&.
+.sp
+There is additionally a set of C APIs in runtime_events\&.h that can enable
+zero\-impact monitoring of the current process or bindings for other
+languages\&.
+.sp
+The runtime events system\&'s behaviour can be controlled by the following
+environment variables:
+.sp
+.sp
+\-OCAML_RUNTIME_EVENTS_START if set will cause the runtime events system
+to be started as part of the OCaml runtime initialization\&.
+
+.sp
+\-OCAML_RUNTIME_EVENTS_DIR sets the directory where the runtime events
+ring buffers will be located\&. If not present the program\&'s working directory
+will be used\&.
+
+.sp
+\-OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
+removing its ring buffers when it terminates\&. This can help if monitoring
+very short running programs\&.
+
+
+.sp
+
+.sp
+.sp
+.I type runtime_counter 
+=
+ | EV_C_FORCE_MINOR_ALLOC_SMALL  (* Triggering of a minor collection due to a full minor heap\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_FORCE_MINOR_MAKE_VECT  (* Triggering of a minor collection due to Array\&.make\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE  (* Triggering of a minor collection due to Gc\&.minor_heap_size\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_FORCE_MINOR_MEMPROF  (* Triggering of a minor collection during memprof young sampling\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MINOR_PROMOTED  (* Total words promoted from the minor heap to the major in the last minor
+collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_MINOR_ALLOCATED  (* Total bytes allocated in the minor heap in the last minor collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_REQUEST_MAJOR_ALLOC_SHR  (* Major slice requested due to allocation in major heap\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED  (* Major slice requested by 
+.ft B
+caml_adjust_gc_speed
+.ft R
+\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE  (* Triggering of a minor collection due to ref table reallocation\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE  (* Triggering of a minor collection due to ephe_ref table reallocation\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE  (* Triggering of a minor collection due to custom table reallocation\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_C_MAJOR_HEAP_POOL_WORDS  (* Total words in a Domain\&'s major heap pools\&. This is the sum of unallocated and
+live words in each pool\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_POOL_LIVE_WORDS  (* Current live words in a Domain\&'s major heap pools\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_LARGE_WORDS  (* Total words of a Domain\&'s major heap large allocations\&.
+A large allocation is an allocation larger than the largest sized pool\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS  (* Words in a Domain\&'s major heap pools lost to fragmentation\&. This is due to
+there not being a pool with the exact size of an allocation and a larger sized
+pool needing to be used\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS  (* Live blocks of a Domain\&'s major heap pools\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_LARGE_BLOCKS  (* Live blocks of a Domain\&'s major heap large allocations\&.
+
+.sp
+.B "Since"
+5.1
+ *)
+ | EV_C_MAJOR_HEAP_WORDS  (* Major heap size in words of a Domain\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_ALLOCATED_WORDS  (* Allocations to the major heap of this Domain in words, since the last major
+slice\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_ALLOCATED_WORK  (* The amount of major GC \&'work\&' needing to be done as a result of allocations to
+the major heap of this Domain in words, since the last major slice\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_DEPENDENT_WORK  (* The amount of major GC \&'work\&' needing to be done as a result of dependent
+allocations to the major heap of this Domain in words, since the last major
+slice\&. Dependent memory is non\-heap memory that depends on heap memory being
+collected in order to be freed\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_EXTRA_WORK  (* The amount of major GC \&'work\&' needing to be done as a result of extra
+non\-memory resources that are dependent on heap memory being collected in order
+to be freed\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_WORK_COUNTER  (* The global amount of major GC \&'work\&' done by all domains since the program
+began\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_ALLOC_COUNTER  (* The global words of major GC allocations done by all domains since the program
+began\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_SLICE_TARGET  (* The target amount of global \&'work\&' that should be done by all domains at the
+end of the major slice (see EV_C_MAJOR_SLICE_COUNTER)\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_C_MAJOR_SLICE_BUDGET  (* The budget in \&'work\&' that a domain has to do during the major slice\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ 
+.sp
+The type for counter events emitted by the runtime\&. Counter events are used
+to measure a quantity at a point in time or record the occurence of an event\&.
+In the latter case their value will be one\&.
+
+.sp
+.I type runtime_phase 
+=
+ | EV_EXPLICIT_GC_SET  (* Event spanning a call to Gc\&.set\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_STAT  (* Event spanning a call to Gc\&.stat\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_MINOR  (* Event spanning a call to Gc\&.minor, which forces a minor collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_MAJOR  (* Event spanning a call to Gc\&.major, which forces a major collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_FULL_MAJOR  (* Event spanning a call to Gc\&.full_major, which forces a full major collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_COMPACT  (* Event spanning a call to Gc\&.compact, which triggers a compaction\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR  (* Event spanning any major GC work\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_SWEEP  (* Event spanning the sweeping work of a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_MARK_ROOTS  (* Event spanning the marking of roots in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_MEMPROF_ROOTS  (* Event spanning the marking of memprof roots in a major GC\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_MAJOR_MARK  (* Event spanning the marking of the heap in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR  (* Event spanning any minor GC work\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_LOCAL_ROOTS  (* Event spanning the scanning and major allocation of local roots during a minor
+GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_MEMPROF_ROOTS  (* Event spanning the scanning and promotion of memprof roots in a minor GC\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_MINOR_MEMPROF_CLEAN  (* Event spanning cleaning and updating of memprof structures at the end of a
+minor GC\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_MINOR_FINALIZED  (* Event spanning the running of finalisers for dead custom blocks at the end of a
+minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_EXPLICIT_GC_MAJOR_SLICE  (* Event spanning a call to Gc\&.major_slice\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_FINALISE_UPDATE_FIRST  (* Event spanning time spent in the first phase of finalisation at the end of a
+major GC cycle\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_FINALISE_UPDATE_LAST  (* Event spanning time spent in the last phase of finalisation at the end of a
+major GC cycle\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_INTERRUPT_REMOTE  (* Event spanning work triggered by an interrupt from another domain\&. This is
+usually a stop\-the\-world request\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_EPHE_MARK  (* Event spanning the marking of ephemeron tables in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_EPHE_SWEEP  (* Event spanning the sweeping of ephemeron tables in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_FINISH_MARKING  (* Event spanning work done at the end of marking in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_GC_CYCLE_DOMAINS  (* Event spanning work done at the end of a major GC cycle\&. This includes a
+minor collection\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_GC_PHASE_CHANGE  (* Event spanning the change of phase in the major GC which involves a global
+barrier\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_GC_STW  (* Event spanning the stop\-the\-world phase done at the end of a major GC cycle\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_MARK_OPPORTUNISTIC  (* Event spanning the work done during opportunistic marking in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_SLICE  (* Event spanning the work done during a major slice in a major GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_FINISH_CYCLE  (* Event spanning attempts to drive all domains to the end of a major GC cycle\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_CLEAR  (* Event spanning the cleaning of the minor heap and supporting structures at the
+end of a minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_FINALIZERS_OLDIFY  (* Event spanning the promotion of finalisers during a minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_GLOBAL_ROOTS  (* Event spanning the scanning and major allocation of global roots during a minor
+GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_LEAVE_BARRIER  (* Event spanning the time spent in the barrier at the end of a minor GC, waiting
+for all domains to finish their work\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_STW_API_BARRIER  (* Event spanning the time spent waiting for all other domains to reach the
+stop\-the\-world entry barrier\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_STW_HANDLER  (* Event spanning the time spent in the stop\-the\-world handler, including time
+spent in the stop\-the\-world callback itself\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_STW_LEADER  (* Event spanning the time spent as the leader of a stop\-the\-world\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_FINISH_SWEEPING  (* Event spanning the time spent finishing sweeping when forced to as part of
+domain termination\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MAJOR_MEMPROF_CLEAN  (* Event spanning the time spent cleaning memprof structures at the end of a major
+GC\&.
+
+.sp
+.B "Since"
+5.3
+ *)
+ | EV_MINOR_FINALIZERS_ADMIN  (* Event spanning finalisers book\-keeping at the end of a minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_REMEMBERED_SET  (* Event spanning the scanning and major allocation of remembered sets during a
+minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_REMEMBERED_SET_PROMOTE  (* Event spanning the promotion of blocks in the remembered set and global roots
+during a minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_MINOR_LOCAL_ROOTS_PROMOTE  (* Event spanning the promotion of local roots during a minor GC\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_DOMAIN_CONDITION_WAIT  (* Event spanning waiting in Condition\&.wait\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_DOMAIN_RESIZE_HEAP_RESERVATION  (* Event spanning resizing the domain heap reservation, as a result of minor heap
+size changes\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_COMPACT  (* Event spanning compaction of the heap during a call to Gc\&.compact\&.
+
+.sp
+.B "Since"
+5.2
+ *)
+ | EV_COMPACT_EVACUATE  (* Event spanning evacuating major GC pools during a compaction\&.
+
+.sp
+.B "Since"
+5.2
+ *)
+ | EV_COMPACT_FORWARD  (* Event spanning the walking of the heap to update changed pointers after an
+evacuation during a compaction\&.
+
+.sp
+.B "Since"
+5.2
+ *)
+ | EV_COMPACT_RELEASE  (* Event spanning releasing the evacuated pools at the end of a compaction\&.
+
+.sp
+.B "Since"
+5.2
+ *)
+ 
+.sp
+The type for span events emitted by the runtime\&.
+
+.sp
+.I type lifecycle 
+=
+ | EV_RING_START  (* Event indicating that the Runtime_events ring buffer has been started\&. Includes
+the PID of the process as an argument\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_RING_STOP  (* Event indicating that the Runtime_events ring buffer has been stopped\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_RING_PAUSE  (* Event indicating that the Runtime_events ring buffer has been paused\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_RING_RESUME  (* Event indicating that the Runtime_events ring buffer has been resumed\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_FORK_PARENT  (* Event indicating that a fork has occurred and the current domain is the parent\&.
+Includes the PID of the child as an argument\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_FORK_CHILD  (* Event indicating that a fork has occurred and the current domain is the child\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_DOMAIN_SPAWN  (* Event indicating that a new domain has been spawned\&. Includes the PID of the
+new domain as an argument\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ | EV_DOMAIN_TERMINATE  (* Event indicating that a domain has terminated\&. Includes the PID of the domain
+as an argument\&.
+
+.sp
+.B "Since"
+5.0
+ *)
+ 
+.sp
+Lifecycle events for Runtime_events and domains\&.
+
+.sp
+
+.I val lifecycle_name 
+: 
+.B lifecycle -> string
+.sp
+Return a string representation of a given lifecycle event type\&.
+
+.sp
+
+.I val runtime_phase_name 
+: 
+.B runtime_phase -> string
+.sp
+Return a string representation of a given runtime phase event type\&.
+
+.sp
+
+.I val runtime_counter_name 
+: 
+.B runtime_counter -> string
+.sp
+Return a string representation of a given runtime counter type\&.
+
+.sp
+.I type cursor 
+
+.sp
+Type of the cursor used when consuming\&.
+
+.sp
+.I module Timestamp : 
+.B sig end
+
+.sp
+
+.sp
+.I module Type : 
+.B sig end
+
+.sp
+
+.sp
+.I module User : 
+.B sig end
+
+.sp
+
+.sp
+.I module Callbacks : 
+.B sig end
+
+.sp
+
+.sp
+
+.I val start 
+: 
+.B unit -> unit
+.sp
+
+.ft B
+start ()
+.ft R
+will start the collection of events in the runtime if not already
+started\&.
+.sp
+Events can be consumed by creating a cursor with 
+.ft B
+create_cursor
+.ft R
+and providing
+a set of callbacks to be called for each type of event\&.
+
+.sp
+
+.I val path 
+: 
+.B unit -> string option
+.sp
+If runtime events are being collected, 
+.ft B
+path ()
+.ft R
+returns 
+.ft B
+Some p
+.ft R
+where 
+.ft B
+p
+.ft R
+is a path to the runtime events file\&. Otherwise, it returns None\&.
+
+.sp
+
+.I val pause 
+: 
+.B unit -> unit
+.sp
+
+.ft B
+pause ()
+.ft R
+will pause the collection of events in the runtime\&.
+Traces are collected if the program has called 
+.ft B
+Runtime_events\&.start ()
+.ft R
+or
+the OCAML_RUNTIME_EVENTS_START environment variable has been set\&.
+
+.sp
+
+.I val resume 
+: 
+.B unit -> unit
+.sp
+
+.ft B
+resume ()
+.ft R
+will resume the collection of events in the runtime\&.
+Traces are collected if the program has called 
+.ft B
+Runtime_events\&.start ()
+.ft R
+or
+the OCAML_RUNTIME_EVENTS_START environment variable has been set\&.
+
+.sp
+
+.I val create_cursor 
+: 
+.B (string * int) option -> cursor
+.sp
+
+.ft B
+create_cursor path_pid
+.ft R
+creates a cursor to read from an runtime_events\&.
+Cursors can be created for runtime_events in and out of process\&. A
+runtime_events ring\-buffer may have multiple cursors reading from it at any
+point in time and a program may have multiple cursors open concurrently
+(for example if multiple consumers want different sets of events)\&. If
+.ft B
+path_pid
+.ft R
+is None then a cursor is created for the current process\&.
+Otherwise the pair contains a string 
+.ft B
+path
+.ft R
+to the directory that contains
+the 
+.ft B
+pid
+.ft R
+\&.events file and int 
+.ft B
+pid
+.ft R
+for the runtime_events of an
+external process to monitor\&.
+
+.sp
+
+.I val free_cursor 
+: 
+.B cursor -> unit
+.sp
+Free a previously created runtime_events cursor\&.
+
+.sp
+
+.I val read_poll 
+: 
+.B cursor -> Callbacks.t -> int option -> int
+.sp
+
+.ft B
+read_poll cursor callbacks max_option
+.ft R
+calls the corresponding functions
+on 
+.ft B
+callbacks
+.ft R
+for up to 
+.ft B
+max_option
+.ft R
+events read off 
+.ft B
+cursor
+.ft R
+\&'s
+runtime_events and returns the number of events read\&.
+
+.sp
