@@ -62,18 +62,96 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
       (
         let typPl = typ_of_place prog mir pl in
         match typPl with
-        | Tstruct (_, l) -> () (*F dis shit am out*)
+        | Tstruct (_, l) ->
+          (
+            match rv with
+            | RVconst _ -> () (*yes*)
+            | RVunit -> () (*yes*)
+            | RVplace p (*unify ?*)
+            | RVborrow(_, p) (*AAAAAAAAAAAA*)
+            | RVunop(_, p) ->
+              (
+                match typ_of_place prog mir p with
+                | Tborrow _ -> failwith "Supposedly unreachable"
+                | Tstruct (_, l') -> List.iter2 (fun lft lft' -> unify_lft lft lft') l l'
+                | _ -> () (*Ok I believe*)
+              )
+            | RVbinop(_, p1, p2) ->
+              (
+                match typ_of_place prog mir p1, typ_of_place prog mir p2 with
+                | Tstruct (_, l'), Tstruct (_, l'') ->
+                  List.iter2 (fun lft lft' -> unify_lft lft lft') l l';
+                  List.iter2 (fun lft lft'' -> unify_lft lft lft'') l l''
+                | _ -> () (*Ok I believe*)
+              )
+            | RVmake(name, pList) -> (*should be okay*)
+              let (tList, t) = fields_types_fresh prog name in
+              List.iter2 (
+              fun t' p ->
+                let t = typ_of_place prog mir p in
+                match t, t' with
+                | Tstruct (_, l), Tstruct (_, l') ->
+                  List.iter2 (fun lft lft' -> add_outlives (lft, lft')) l l'
+                | Tborrow (lft, _, _), Tborrow (lft', _, _) -> add_outlives (lft, lft')
+                | _ -> ()
+              ) (t::tList) (pl::pList)
+          )
         | Tborrow (lftPl, _, _) ->
           (
             match rv with
             | RVconst _ -> () (*yes*)
             | RVunit -> () (*yes*)
-            | RVplace p -> () (*unify ?*)
-            | RVborrow(Mut, p) -> () (*AAAAAAAAAAAAAAA*)
-            | RVborrow(_, p) -> () (*AAAAAAAAAAAA*)
-            | RVbinop(_, p1, p2) -> () (*unify ?*)
-            | RVunop(_, p) -> () (*unify ?*)
-            | RVmake(_, plist) -> () (*fields_types_fresh*)
+            | RVplace p (*unify ?*)
+            | RVborrow(_, p) (*AAAAAAAAAAAA*)
+            | RVunop(_, p) ->
+              (
+                match typ_of_place prog mir p with
+                | Tstruct _ -> failwith "Supposedly unreachable"
+                | Tborrow (lft', _, _) ->
+                  if contains_deref_borrow p then
+                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                  else
+                    unify_lft lftPl lft'
+                | _ -> () (*Ok I believe*)
+              )
+            | RVbinop(_, p1, p2) ->
+              (
+                match typ_of_place prog mir p1, typ_of_place prog mir p2 with
+                | Tstruct _, _ | _, Tstruct _ -> failwith "Supposedly unreachable"
+                | Tborrow (lft', _, _), Tborrow(lft'', _, _) ->
+                  (
+                    (if contains_deref_borrow p1 then
+                      add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                    else
+                      unify_lft lftPl lft');
+                    (if contains_deref_borrow p2 then
+                      add_outlives (lftPl, lft'') (*peut être insuffisant -> alors faut récursion*)
+                    else
+                      unify_lft lftPl lft'')
+                  )
+                | Tborrow (lft', _, _), _ ->
+                  if contains_deref_borrow p1 then
+                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                  else
+                    unify_lft lftPl lft'
+                | _, Tborrow (lft', _, _) ->
+                  if contains_deref_borrow p2 then
+                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                  else
+                    unify_lft lftPl lft'
+                | _ -> () (*Ok I believe*)
+              )
+            | RVmake(name, pList) -> (*should be okay*)
+              let (tList, t) = fields_types_fresh prog name in
+              List.iter2 (
+              fun t' p ->
+                let t = typ_of_place prog mir p in
+                match t, t' with
+                | Tstruct (_, l), Tstruct (_, l') ->
+                  List.iter2 (fun lft lft' -> add_outlives (lft, lft')) l l'
+                | Tborrow (lft, _, _), Tborrow (lft', _, _) -> add_outlives (lft, lft')
+                | _ -> ()
+              ) (t::tList) (pl::pList)
           )
         | _ -> (); (*yes*)
       )
@@ -120,6 +198,14 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
        (those in [mir.mgeneric_lfts]) should be alive during the whole execution of the
        function.
   *)
+  (* À FAIRE : Générer les contraintes de vie :
+      - Ajouter les contraintes de vies correspondant au fait que les durées de vie
+        apparaissant libres dans le type des locaux en vie à un point du programme
+        devraient être en vie à ce point du programme
+      - Ajouter les contraintes de vie correspondant au fait que les variable génériques
+        de durée de vide (celles dans [mir.mgeneric_lfts]) devraient être en vie durant
+        toute l'exécution de la fonction
+  *)
 
   (* If [lft] is a generic lifetime, [lft] is always alive at [PpInCaller lft]. *)
   List.iter (fun lft -> add_living (PpInCaller lft) lft) mir.mgeneric_lfts;
@@ -135,7 +221,6 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
         (Option.value ~default:PpSet.empty (LMap.find_opt lft !living)))
 
 let borrowck prog mir =
-  Printf.printf "ptnZebi\n"; (*todel*)
   (* We check initializedness requirements for every instruction. *)
   let uninitialized_places = Uninitialized_places.go prog mir in
   Array.iteri

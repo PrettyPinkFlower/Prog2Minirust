@@ -82,7 +82,7 @@ let go prog mir : analysis_results =
     (* To complete this module, one can read file active_borrows.ml, which contains a
       similar data flow analysis. *)
     let foreach_root go = (*should be okay*)
-      let baseState = PlaceSet.filter (fun pl -> match (local_of_place pl) with | Lparam _ -> false | _ -> true) all_places in
+      let baseState = PlaceSet.filter (fun pl -> match (local_of_place pl) with | Lparam _ | Lret -> false | _ -> true) all_places in
       go mir.mentry baseState
 
     let foreach_successor lbl state go = (*To repair*)
@@ -98,7 +98,9 @@ let go prog mir : analysis_results =
             | RVmake(_, plist) -> List.fold_left (fun st p -> move_or_copy p st) state plist (*unsure*)
         in
         go next newState
-      | Ideinit (_, next) -> go next state (*unsure*) 
+      | Ideinit (l, next) ->
+        let newState = PlaceSet.filter (fun pl -> local_of_place pl <> l) state in
+        go next newState (*More sure*) 
       | Igoto next -> go next state
       | Iif (_, next1, next2) -> (*sure enough*)
           go next1 state;
