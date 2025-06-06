@@ -58,9 +58,7 @@ let go prog mir : analysis_results =
   let deinitialize pl state = PlaceSet.union state (Hashtbl.find subplaces pl) in
 
   (* Effect of using (copying or moving) a place [pl] on the abstract state [state]. *)
-  (*Utilisée plus bas quend on tombe sur une place à copier ou bouger*)
-  (*Quand on assigne, si c'est copy, on déinit pas, sinon si*)
-  let move_or_copy pl state = (*should be okay*)
+  let move_or_copy pl state = 
     let place_type = typ_of_place prog mir pl in
     if typ_is_copy prog place_type then
       state
@@ -81,32 +79,32 @@ let go prog mir : analysis_results =
 
     (* To complete this module, one can read file active_borrows.ml, which contains a
       similar data flow analysis. *)
-    let foreach_root go = (*should be okay*)
+    let foreach_root go =
       let baseState = PlaceSet.filter (fun pl -> match (local_of_place pl) with | Lparam _ | Lret -> false | _ -> true) all_places in
       go mir.mentry baseState
 
-    let foreach_successor lbl state go = (*To repair*)
+    let foreach_successor lbl state go =
         match fst mir.minstrs.(lbl) with
       | Iassign (pl, rv, next) ->
         let newState =
           match rv with
             | RVconst _ | RVunit -> state
             | RVplace p -> move_or_copy p state
-            | RVborrow(_, p) -> deinitialize p state (*unsure*)
-            | RVbinop(_, p1, p2) -> move_or_copy p1 (move_or_copy p2 state) (*unsure*)
-            | RVunop(_, p) -> move_or_copy p state (*unsure*)
-            | RVmake(_, plist) -> List.fold_left (fun st p -> move_or_copy p st) state plist (*unsure*)
+            | RVborrow(_, p) -> deinitialize p state
+            | RVbinop(_, p1, p2) -> move_or_copy p1 (move_or_copy p2 state)
+            | RVunop(_, p) -> move_or_copy p state
+            | RVmake(_, plist) -> List.fold_left (fun st p -> move_or_copy p st) state plist
         in
         go next newState
       | Ideinit (l, next) ->
         let newState = PlaceSet.filter (fun pl -> local_of_place pl <> l) state in
-        go next newState (*More sure*) 
+        go next newState 
       | Igoto next -> go next state
-      | Iif (_, next1, next2) -> (*sure enough*)
+      | Iif (_, next1, next2) -> 
           go next1 state;
           go next2 state
-      | Ireturn -> () (*sure enough*)
-      | Icall (_, _, pl, next) -> go next state (*unsure*)
+      | Ireturn -> ()
+      | Icall (_, _, pl, next) -> go next state
   end in
   let module Fix = Fix.DataFlow.ForIntSegment (Instrs) (Prop) (Graph) in
   fun i -> Option.value (Fix.solution i) ~default:PlaceSet.empty
