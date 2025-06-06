@@ -55,6 +55,14 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
   
   SUGGESTION: utilisez les fonctions [typ_of_place], [fields_types_fresh] et [fn_prototype_fresh].
   *)
+  let rec recursive_add_borrow_constraints outliving_lft t =
+    match t with
+    | Tborrow (lft, _, t') ->
+      add_outlives (outliving_lft, lft);
+      recursive_add_borrow_constraints outliving_lft t'
+    | _ -> () (*ptet qlqc à faire qd on est dans le cas struct*)
+  in
+
   Array.iteri
     (fun _ (instr, loc) ->
       match instr with
@@ -105,38 +113,40 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
             | RVborrow(_, p) (*AAAAAAAAAAAA*)
             | RVunop(_, p) ->
               (
-                match typ_of_place prog mir p with
+                let t = typ_of_place prog mir p in
+                match t with
                 | Tstruct _ -> failwith "Supposedly unreachable"
                 | Tborrow (lft', _, _) ->
                   if contains_deref_borrow p then
-                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                    recursive_add_borrow_constraints lftPl t
                   else
                     unify_lft lftPl lft'
                 | _ -> () (*Ok I believe*)
               )
             | RVbinop(_, p1, p2) ->
               (
-                match typ_of_place prog mir p1, typ_of_place prog mir p2 with
+                let t1, t2 = typ_of_place prog mir p1, typ_of_place prog mir p2 in
+                match t1, t2 with
                 | Tstruct _, _ | _, Tstruct _ -> failwith "Supposedly unreachable"
                 | Tborrow (lft', _, _), Tborrow(lft'', _, _) ->
                   (
                     (if contains_deref_borrow p1 then
-                      add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                      recursive_add_borrow_constraints lftPl t1
                     else
                       unify_lft lftPl lft');
                     (if contains_deref_borrow p2 then
-                      add_outlives (lftPl, lft'') (*peut être insuffisant -> alors faut récursion*)
+                      recursive_add_borrow_constraints lftPl t2
                     else
                       unify_lft lftPl lft'')
                   )
                 | Tborrow (lft', _, _), _ ->
                   if contains_deref_borrow p1 then
-                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                    recursive_add_borrow_constraints lftPl t1
                   else
                     unify_lft lftPl lft'
                 | _, Tborrow (lft', _, _) ->
                   if contains_deref_borrow p2 then
-                    add_outlives (lftPl, lft') (*peut être insuffisant -> alors faut récursion*)
+                    recursive_add_borrow_constraints lftPl t2
                   else
                     unify_lft lftPl lft'
                 | _ -> () (*Ok I believe*)
@@ -204,11 +214,51 @@ let compute_lft_sets prog mir : lifetime -> PpSet.t =
         devraient être en vie à ce point du programme
       - Ajouter les contraintes de vie correspondant au fait que les variable génériques
         de durée de vide (celles dans [mir.mgeneric_lfts]) devraient être en vie durant
-        toute l'exécution de la fonction
+        toute l'exécution de la fonction (fait par défaut)
   *)
 
   (* If [lft] is a generic lifetime, [lft] is always alive at [PpInCaller lft]. *)
   List.iter (fun lft -> add_living (PpInCaller lft) lft) mir.mgeneric_lfts;
+ (*c'est bien ça : itérer sur les pp et pour chaque pp, appliquer live_locals et ajouter de pplocal*)
+  (* let shoudFail =
+    try
+      (Some (live_locals 99))
+    with
+    | Invalid_argument e -> None in
+  Printf.printf "ahi\n"; *)
+  (* Array.iteri
+    (fun _ (instr, loc) ->
+      match instr with
+      | Iassign (pl, rv, lbl) -> () (*loc of place à g et d et utiliser live_locals sur lbl*)
+      | Ideinit _ -> () (*same*)
+      | Igoto _ -> () (*yes*)
+      | Iif _ -> () (*verif sur la condition*)
+      | Ireturn -> () (*yes*)
+      | Icall (name, pList, pla, _) -> () (*itérer sur les paramètres*)
+    )
+    mir.minstrs; *)
+  let rec rec_add_lft lbl t =
+    match t with
+    | Tstruct (_, lfts) ->
+      List.iter (add_living (PpLocal lbl)) lfts
+    | Tborrow (lft, _, t') ->
+      add_living (PpLocal lbl) lft;
+      rec_add_lft lbl t'
+    | _ -> ()
+  in
+
+  let lbl = ref 0 in
+  try
+    while true do
+        LocSet.iter (
+          fun l ->
+            let t = typ_of_place prog mir (PlLocal l) in
+            rec_add_lft !lbl t
+        ) (live_locals (!lbl));
+        lbl := !lbl + 1
+    done;
+  with
+  | Invalid_argument e -> ();
 
   (* Now, we compute lifetime sets by finding the smallest solution of the constraints, using the
     Fix library. *)
@@ -293,6 +343,56 @@ let borrowck prog mir =
     enough to ensure safety. I.e., if [lft_sets lft] contains program point [PpInCaller lft'], this
     means that we need that [lft] be alive when [lft'] dies, i.e., [lft'] outlives [lft]. This relation
     has to be declared in [mir.outlives_graph]. *)
+  
+  (*pour toutes les lifetimes, faire la vérification ci-dessus*)
+  let outlives lft lft' =
+    let set = LMap.find lft mir.moutlives_graph in
+    LSet.mem lft' set
+  in
+  let check_prototype_safety lft loc =
+    let pointSet = lft_sets lft in
+    PpSet.iter (
+      fun point ->
+        match point with
+        | PpInCaller lft' ->
+          if outlives lft' lft then ()
+          else Error.error loc "ErOr HeRe"
+        | _ -> ()
+    ) pointSet
+  in
+  let rec rec_typ_safety_check t loc =
+    match t with
+    | Tstruct (_, l) ->
+      List.iter (fun lft -> check_prototype_safety lft loc) l
+    | Tborrow (lft, _, t') ->
+      check_prototype_safety lft loc;
+      rec_typ_safety_check t' loc
+    | _ -> ()
+  in
+  let check_safety_from_place pl loc =
+    let t = typ_of_place prog mir pl in
+    rec_typ_safety_check t loc
+  in
+  Array.iteri
+    (fun _ (instr, loc) ->
+      match instr with
+      | Iassign (pl, rv, _) ->
+        (match rv with
+        | RVplace p
+        | RVborrow(_, p)
+        | RVunop(_, p) -> check_safety_from_place p loc
+        | RVbinop(_, p1, p2) ->
+          check_safety_from_place p1 loc;
+          check_safety_from_place p2 loc
+        | RVmake(_, plist) ->
+          List.iter (fun p -> check_safety_from_place p loc) plist
+        | _ -> ())
+      | Iif (p, _, _) -> check_safety_from_place p loc
+      | Icall (_, l, p, _) ->
+        List.iter (fun p -> check_safety_from_place p loc) (p::l)
+      | _ -> ()
+    )
+    mir.minstrs;
 
   (* We check that we never perform any operation which would conflict with an existing
     borrows. *)
@@ -371,6 +471,15 @@ let borrowck prog mir =
       | Iassign (_, RVborrow (mut, pl), _) ->
           if conflicting_borrow (mut = Mut) pl then
             Error.error loc "There is a borrow conflicting this borrow."
-      | _ -> () (* 5 TODO: complete the other cases*)
+      | Iassign (_, RVbinop(_, p1, p2), _) ->
+        check_use p1;
+        check_use p2
+      | Iassign (_, RVplace p, _) -> check_use p
+      | Iassign (_, RVmake (_, plist), _) ->
+        List.iter (check_use) plist
+      | Iif (p, _, _) -> check_use p
+      | Icall(_, plist, p, _) ->
+        List.iter (check_use) (p::plist)
+      | _ -> () (* 5 TODO: complete the other cases*) (*ptet qqc à faire avec Ideinit*)
     )
     mir.minstrs
